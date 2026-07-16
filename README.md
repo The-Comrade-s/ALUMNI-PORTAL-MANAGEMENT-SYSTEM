@@ -1,152 +1,217 @@
 # Gateway ICT Polytechnic Saapade — Alumni Portal Management System
 
-Full-stack alumni portal: Next.js 15 frontend, Laravel 12 API (Sanctum SPA
-auth), PostgreSQL. This package contains the complete `/backend` and
-`/frontend` codebases, deployment config, and automated tests.
+Full-stack alumni portal: Next.js 15 frontend, Laravel 12 API (Sanctum
+bearer-token auth), Supabase PostgreSQL. Deploys as three independent
+services: **Vercel** (frontend), **Koyeb** (backend, Docker), **Supabase**
+(database + file storage).
 
-## What's built and working
+## Project overview
 
-**Backend**
-- Full DB schema (7 migrations, 14 models): roles/permissions, users,
-  School→Department→Programme→Graduation Year hierarchy, alumni profiles,
-  representatives, jobs, events + registrations + gallery, news, messaging,
-  notifications, audit logs, settings
-- RBAC: 5 roles, permission pivot, `role:` middleware, Policies
-- Auth: register (pending-approval workflow), login, logout, me,
-  forgot/reset password
-- Full CRUD APIs: Alumni directory + profile + verification, Jobs, Events +
-  registration, News, Admin CRUD for Schools/Departments/Programmes/
-  Graduation Years, alumni approval queue, audit log viewer
-- **Messaging**: `ConversationController` — start conversations, send/read
-  messages, unread counts, participant-only access enforcement
-- **Notifications**: `NotificationService` creates in-app notifications on
-  alumni approval/rejection, event registration, new messages, and new
-  registrations (to admins); `NotificationController` for listing/marking
-  read. This is in-app only — no email/push delivery is wired up.
-- **Reports**: CSV (dependency-free), XLSX (`maatwebsite/excel`), and PDF
-  (`barryvdh/laravel-dompdf`, with a branded Blade template) alumni exports,
-  all pinned in `composer.json`
-- **Automated tests**: PHPUnit feature tests covering auth, job posting
-  policies, event registration, directory filtering/visibility, admin
-  structural CRUD, and messaging (7 test files, ~25 assertions total) —
-  run with `php artisan test`. Uses SQLite in-memory, no DB setup needed.
-- Auto audit-logging via model observer; seeders for roles, permissions,
-  super admin, starter academic data
+Alumni self-register (pending admin/class-rep approval), then get access
+to a directory of classmates, jobs, events, news, and messaging. Admins
+manage the academic hierarchy (Schools → Departments → Programmes →
+Graduation Years — all admin-editable, nothing hardcoded), approve new
+alumni, and pull directory reports.
 
-**Frontend**
-- Design system: navy/gold brand tokens, Poppins/Inter/JetBrains Mono,
-  the "Gateway Mark" signature motif, your logo wired throughout
-- Landing, Login, Register (fully wired to the API, live cascading
-  dropdowns) pages
-- Alumni-facing dashboard: Dashboard home, **Directory** (search + filter),
-  **Jobs** (filter by type), **Events** (list + working register button),
-  **News** (list + expand), **Profile** (view/edit, calls the real API),
-  **Messages** (conversation list + live chat panel)
-- **Notifications dropdown** in the topbar (unread badge, mark-all-read)
-- **Admin Panel**: separate navy sidebar, dashboard home, a reusable
-  `CrudTable` component powering Schools/Departments/Programmes/Graduation
-  Years (create/edit/delete with cascading dropdowns), Alumni Approval
-  queue, Audit Log viewer, Reports page (CSV/XLSX/PDF download buttons)
-- **Automated tests**: Vitest + React Testing Library, 2 test files
-  covering `LoginForm` and `CrudTable` — run with `npm run test`
+## Architecture
 
-**Deployment**
-- `render.yaml` blueprint: backend web service, queue worker, frontend web
-  service, managed PostgreSQL
-- `backend/Dockerfile`
+```
+┌─────────────────┐        ┌──────────────────┐        ┌─────────────────┐
+│  Vercel          │  API   │  Koyeb            │  SQL   │  Supabase        │
+│  Next.js 15      │◄──────►│  Laravel 12       │◄──────►│  PostgreSQL      │
+│  (frontend)      │ bearer │  nginx+php-fpm     │  pgsql │  + Storage (S3)  │
+│                  │ token  │  (Docker)          │  ssl   │                  │
+└─────────────────┘        └──────────────────┘        └─────────────────┘
+```
 
-## Honest scope notes
+Frontend and backend are on **unrelated domains** (`*.vercel.app` /
+`*.koyeb.app`), which is why auth is bearer-token-based rather than
+cookie-based — see "Auth architecture" below.
 
-This is a working, coherent MVP across every module you asked for — not a
-mock. A few things worth knowing before you treat it as production-final:
+## Installation (local development)
 
-- **Notification delivery is in-app only.** The `notifications` table and
-  UI work; there's no email or push channel wired to Laravel's queue yet.
-- **Test coverage is representative, not exhaustive.** Core auth/policy/
-  registration flows are covered; edge cases, admin department/programme
-  CRUD tests, and full frontend E2E (Cypress/Playwright) are not.
-- **PDF/XLSX depend on Composer packages not yet installed** (they're in
-  `composer.json`, just run `composer install`).
-- **No CI pipeline running the tests yet** — `render.yaml` deploys on
-  push but doesn't gate on `php artisan test` / `npm run test` passing
-  first; wire that into GitHub Actions before relying on it.
-- **Representative-management and Settings controllers** are still just
-  noted as comments in `routes/api.php`.
-- Nothing here has been run against a live PostgreSQL/Node install in this
-  environment (no network access to install Composer/npm packages) — it's
-  been written and reviewed carefully, not executed. Run the test suites
-  after `composer install` / `npm install` to catch anything that slipped
-  through.
-
-## Before you push this to GitHub
-
-1. **Generate lockfiles first**, then commit them — CI needs `composer.lock`
-   and `frontend/package-lock.json` to install exact versions and to enable
-   npm's dependency cache in the workflow:
-   ```bash
-   cd backend && composer install   # creates composer.lock
-   cd ../frontend && npm install    # creates package-lock.json
-   ```
-2. **Never commit a real `.env`** — `.gitignore` (root) and
-   `backend/.gitignore` both exclude it; only the `.env.example` files
-   should be tracked. Double-check `git status` before your first commit.
-3. **`.github/workflows/ci.yml`** runs `php artisan test` and
-   `npm run test` + a TypeScript check on every push/PR to `main` — this
-   closes the "no CI" gap noted earlier. It doesn't deploy; Render's own
-   GitHub integration handles deploys via `render.yaml` once you connect
-   the repo as a Blueprint.
-4. **Choose a license** — no `LICENSE` file is included since this is
-   institutional software with an implied "all rights reserved" default;
-   add one explicitly (MIT, proprietary notice, etc.) if Gateway ICT
-   Polytechnic wants the repo's terms stated outright.
-5. Repo root should be this folder's contents (`backend/`, `frontend/`,
-   `render.yaml`, `README.md`, `.github/`) — not a nested subfolder —
-   or Render's Blueprint won't find `render.yaml` and the CI workflow
-   paths (`working-directory: backend` / `frontend`) will break.
-
-## Getting it running locally
-
+**Backend:**
 ```bash
-# Backend
 cd backend
-composer create-project laravel/laravel:^12.0 . --prefer-dist  # if starting from scratch, then copy these files in, overwriting defaults
-composer install
-cp .env.example .env && php artisan key:generate
-php artisan migrate --seed
-php artisan test        # run the backend test suite
-php artisan serve
+# Fill in the rest of a real Laravel 12 install (artisan, public/, etc.)
+# without touching any file this repo already ships — same approach
+# backend/Dockerfile and .github/workflows/ci.yml use.
+composer create-project laravel/laravel:^12.0 /tmp/skeleton --prefer-dist --no-interaction --no-scripts
+rsync -a --ignore-existing /tmp/skeleton/ .
 
-# Frontend
+composer install
+cp .env.example .env
+php artisan key:generate
+# point .env at a local Postgres or a Supabase dev project — see SUPABASE.md
+php artisan migrate --seed
+php artisan test
+php artisan serve
+```
+
+Or skip the manual skeleton step entirely and just build the Docker image
+locally — `backend/Dockerfile` does this bootstrapping for you:
+```bash
+cd backend
+docker build -t gateway-alumni-backend .
+docker run -p 8080:8080 --env-file .env gateway-alumni-backend
+```
+
+**Frontend:**
+```bash
 cd frontend
 npm install
-cp .env.example .env.local
-npm run test             # run the frontend test suite
+cp .env.example .env.local   # set NEXT_PUBLIC_API_URL
+npm run test
 npm run dev
 ```
 
-Log in with the seeded super admin: `superadmin@gatewaypolysaapade.edu.ng` /
-the value you set for `SUPER_ADMIN_SEED_PASSWORD`. Admin panel is at
-`/admin` on the frontend once you've built auth-guarding into that route
-group (currently open — add a middleware/guard check before deploying
-publicly).
+Log in with the seeded super admin:
+`superadmin@gatewaypolysaapade.edu.ng` / your `SUPER_ADMIN_SEED_PASSWORD`.
 
-## Deploying to Render
+## Development
 
-1. Push this repo to GitHub.
-2. In Render, create a new Blueprint from the repo — it reads `render.yaml`
-   and provisions the backend web service, queue worker, frontend web
-   service, and managed Postgres.
-3. Fill in the `sync: false` env vars in the Render dashboard.
-4. Push to `main` — Render auto-deploys; the backend build command runs
-   migrations on every deploy.
+- Backend tests: `php artisan test` (PHPUnit, SQLite in-memory, no DB
+  setup needed) — 7 feature test files covering auth, job posting
+  policies, event registration, directory visibility/filtering, admin
+  structural CRUD, and messaging.
+- Frontend tests: `npm run test` (Vitest + React Testing Library).
+- `.github/workflows/ci.yml` runs both suites plus a TypeScript check on
+  every push/PR to `main`.
 
-## Suggested next steps
+## Deployment
 
-1. Add auth-guard middleware to the `(dashboard)` and `(admin)` route
-   groups on the frontend (currently unguarded at the routing level —
-   the API enforces auth, but the UI will render before an unauthenticated
-   request fails)
-2. Wire GitHub Actions to run both test suites before Render deploys
-3. Add email delivery for notifications (Laravel Notification channels)
-4. Representative-management and Settings controllers
-5. Broaden test coverage (department/programme CRUD, news, admin edge cases, frontend E2E)
+Three separate guides, one per service:
+
+- **[VERCEL.md](./VERCEL.md)** — frontend deployment (near-zero-config)
+- **[KOYEB.md](./KOYEB.md)** — backend deployment (Docker, env vars,
+  running migrations, known limitations around queues/scheduling)
+- **[SUPABASE.md](./SUPABASE.md)** — database setup, connection pooling,
+  file storage, RLS notes
+
+Read them in that order: Supabase first (you need connection details
+before configuring Koyeb), then Koyeb (you need the backend URL before
+configuring Vercel), then Vercel.
+
+## Environment variables
+
+Full, documented lists live in `backend/.env.example` and
+`frontend/.env.example` — every variable has an inline comment explaining
+what it's for and, where relevant, whether it's a local-dev-only or
+production-required value. The short version:
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `APP_KEY` | backend | Laravel encryption key — generate once, never rotate carelessly |
+| `FRONTEND_URL` | backend | CORS allowlist — must exactly match the deployed Vercel origin |
+| `DB_*` | backend | Supabase Postgres connection (pooler for app traffic, direct for migrations) |
+| `AWS_*` | backend | Supabase Storage (S3-compatible) for uploads |
+| `SUPER_ADMIN_SEED_PASSWORD` | backend | Seeded super admin's initial password |
+| `NEXT_PUBLIC_API_URL` | frontend | The Koyeb backend's public URL |
+
+## Auth architecture
+
+Bearer tokens (Sanctum personal access tokens), not cookies — see the
+comment block at the top of `frontend/lib/api-client.ts` for the full
+reasoning and trade-off (localStorage token storage vs. httpOnly cookies).
+`AuthController::logout` still supports session-based logout as a
+fallback if you ever run frontend and backend same-origin locally.
+
+## Troubleshooting
+
+**CORS errors in the browser console on login/register:**
+`FRONTEND_URL` on the Koyeb backend doesn't exactly match the Vercel
+origin making the request (check scheme, exact subdomain, no trailing
+slash). Update it and redeploy the backend — `config/cors.php` reads it
+at request time via env, but Laravel's `config:cache` (run automatically
+by the Docker entrypoint) means a changed env var needs a restart to take
+effect, not just a dashboard save.
+
+**Registration/directory dropdowns stay empty:**
+Either the CORS issue above, or the backend database hasn't been migrated
+— `/api/v1/lookups/schools` will 500 against an empty/unmigrated database.
+
+**Login succeeds but subsequent API calls 401:**
+The bearer token isn't being attached — check that `NEXT_PUBLIC_API_URL`
+was set at Vercel *build* time (it's inlined, not read at runtime; a
+changed value needs a redeploy) and that nothing is clearing
+`localStorage` between the login redirect and the next request.
+
+**`php artisan migrate` fails against Supabase:**
+Almost always `DB_SSLMODE` missing/wrong, or using the pooler connection
+(port `6543`) for migrations instead of the direct one (port `5432`) —
+see `SUPABASE.md`.
+
+**Report downloads (CSV/XLSX/PDF) fail or download a 0-byte file:**
+Confirm `composer install` actually pulled in `barryvdh/laravel-dompdf`
+and `maatwebsite/excel` (both are in `backend/composer.json` but this has
+not been executed in the environment that produced this codebase — see
+"Honest scope notes" below).
+
+## Maintenance
+
+- **Rotating `APP_KEY`:** invalidates all existing sessions/tokens and
+  makes any encrypted database columns unreadable. Don't do this casually
+  in production; if you must, plan for every user to be logged out.
+- **Database backups:** Supabase takes automatic backups on paid tiers —
+  confirm your plan includes this; the free tier's backup retention is
+  short.
+- **Rotating the Supabase DB password:** update `DB_PASSWORD` in Koyeb's
+  env vars and redeploy — the app will fail all DB queries between the
+  password change and the redeploy completing.
+- **Dependency updates:** `composer.json` and `frontend/package.json` pin
+  minor-version ranges (`^`); run `composer update` / `npm update`
+  periodically and re-run both test suites before deploying.
+
+## What's built and working
+
+**Backend:** full DB schema (7 migrations, 14 models), RBAC (5 roles,
+permission pivot, Policies, `role:` middleware), auth (register with
+approval workflow, login/logout, forgot/reset password — now bearer-token
+based), full CRUD APIs (Alumni directory + profile + verification, Jobs,
+Events + registration, News, Admin CRUD for the academic hierarchy, alumni
+approval queue, audit log viewer), messaging (conversations + messages,
+participant-only access), in-app notifications (approvals, event
+registration, new messages, new signups), CSV/XLSX/PDF alumni reports,
+audit logging via model observer, PHPUnit test suite.
+
+**Frontend:** full design system (navy/gold brand tokens, Poppins/Inter/
+JetBrains Mono, the "Gateway Mark" signature motif, your logo throughout),
+landing/login/register pages (register genuinely calls the API with live
+cascading dropdowns), alumni dashboard (Directory, Jobs, Events, News,
+Profile, Messages — all wired to real APIs), notifications dropdown,
+admin panel (structural CRUD via a reusable table component, alumni
+approval queue, audit log viewer, report downloads), client-side auth
+guarding with role checks, Vitest test suite.
+
+**Deployment:** Docker multi-stage build for Koyeb (bootstraps a full
+Laravel skeleton at build time, serves via nginx+php-fpm+supervisord, not
+`artisan serve`), CORS configured for the cross-domain split, Vercel
+config with security headers, GitHub Actions CI running both test suites.
+
+## Honest scope notes
+
+Being direct about this rather than overselling it:
+
+- **Nothing in this repository has been executed in the environment that
+  produced it.** No network access here to run `composer install`,
+  `npm install`, `php artisan test`, `npm run test`, a Docker build, or an
+  actual deploy to Koyeb/Vercel/Supabase. Everything has been written and
+  cross-checked carefully — imports traced, request/response shapes
+  matched between frontend and backend, a real bug caught this way (the
+  register form was missing a required `school_id` field, now fixed) —
+  but "carefully reviewed" is not the same claim as "tested." Run both
+  test suites immediately after your first `composer install`/`npm
+  install` to catch anything that slipped through static review.
+- **Notification delivery is in-app only** — no email/push channel wired
+  to a queue.
+- **No queue worker or scheduler service** is defined for Koyeb —
+  `QUEUE_CONNECTION=sync` runs everything inline. Fine at low traffic;
+  see `KOYEB.md`'s "Known limitations" if you need to change this.
+- **Route guarding is client-side only** (Next.js middleware can't read
+  the `localStorage` bearer token) — see `VERCEL.md`'s auth note.
+- **Test coverage is representative, not exhaustive** — core flows are
+  covered; edge cases and full E2E (Cypress/Playwright) are not.
+- **Representative-management and Settings controllers** are still just
+  comments in `backend/routes/api.php`.
+- **File uploads** (profile photos, event galleries) have storage config
+  ready (Supabase S3-compatible disk) but no upload endpoint/UI wired yet.
