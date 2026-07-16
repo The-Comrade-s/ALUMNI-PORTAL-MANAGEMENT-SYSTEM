@@ -6,47 +6,49 @@ services:
     dockerContext: ./backend
     plan: starter
     healthCheckPath: /up
+
     envVars:
       - key: APP_ENV
         value: production
+
       - key: APP_DEBUG
         value: false
+
       - key: APP_KEY
         sync: false
+
       - key: APP_URL
         sync: false
+
       - key: FRONTEND_URL
         sync: false
+
       - key: SANCTUM_STATEFUL_DOMAINS
         sync: false
+
       - key: SESSION_DOMAIN
         sync: false
+
       - key: DB_CONNECTION
         value: pgsql
+
       - key: DB_HOST
-        fromDatabase:
-          name: gateway-alumni-db
-          property: host
+        sync: false
+
       - key: DB_PORT
-        fromDatabase:
-          name: gateway-alumni-db
-          property: port
+        value: 5432
+
       - key: DB_DATABASE
-        fromDatabase:
-          name: gateway-alumni-db
-          property: database
+        sync: false
+
       - key: DB_USERNAME
-        fromDatabase:
-          name: gateway-alumni-db
-          property: user
+        sync: false
+
       - key: DB_PASSWORD
-        fromDatabase:
-          name: gateway-alumni-db
-          property: password
+        sync: false
+
       - key: SUPER_ADMIN_SEED_PASSWORD
         sync: false
-    buildCommand: composer install --no-dev --optimize-autoloader
-    startCommand: php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT
 
   - type: worker
     name: gateway-alumni-queue
@@ -54,20 +56,45 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: starter
-    startCommand: php artisan queue:work --tries=3
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      - key: APP_DEBUG
+        value: false
+
+      - key: APP_KEY
+        sync: false
+
+      - key: DB_CONNECTION
+        value: pgsql
+
+      - key: DB_HOST
+        sync: false
+
+      - key: DB_PORT
+        value: 5432
+
+      - key: DB_DATABASE
+        sync: false
+
+      - key: DB_USERNAME
+        sync: false
+
+      - key: DB_PASSWORD
+        sync: false
 
   - type: web
     name: gateway-alumni-frontend
     runtime: node
     plan: starter
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run start
+    rootDir: frontend
+
+    buildCommand: npm install && npm run build
+
+    startCommand: npm run start
+
     envVars:
       - key: NEXT_PUBLIC_API_URL
         sync: false
-
-databases:
-  - name: gateway-alumni-db
-    plan: starter
-    databaseName: gateway_alumni
-    user: gateway_alumni
