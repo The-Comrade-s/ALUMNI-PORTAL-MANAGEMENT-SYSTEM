@@ -13,7 +13,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
-    'https://alumni-portal-management-system-o26e2n9l8.vercel.app', // Direct string, no env(), no trailing slash
+    'https://alumni-portal-management-system.vercel.app', // Direct string, no env(), no trailing slash
         env('FRONTEND_URL'),
         env('APP_ENV') === 'local' ? 'http://localhost:3000' : null,
 ]),
