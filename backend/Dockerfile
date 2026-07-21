@@ -91,6 +91,7 @@ RUN apk add --no-cache \
         pdo \
         pdo_pgsql \
         opcache \
+    && apk add --no-cache libpng freetype libjpeg-turbo libzib icu-libs oniguruma libpq \
     && apk del \
         postgresql-dev \
         libzip-dev \
@@ -121,7 +122,7 @@ RUN mkdir -p \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-COPY docker/nginx.conf.template /etc/nginx/conf.d/app.conf.template
+COPY docker/nginx.conf.template /etc/nginx/http.d/app.conf.template
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 
