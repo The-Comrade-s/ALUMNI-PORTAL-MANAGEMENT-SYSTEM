@@ -33,7 +33,7 @@ COPY config/cors.php config/cors.php
 COPY bootstrap/app.php bootstrap/app.php
 COPY resources/views/ resources/views/
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist \
+RUN composer update --no-dev --optimize-autoloader --no-interaction --prefer-dist \
     && composer dump-autoload --optimize
 
 # ---------------------------------------------------------------------------
