@@ -18,9 +18,26 @@ RUN composer create-project laravel/laravel:^12.0 . \
 # ---------------------------------------------------------------------------
 # Stage 2 — overlay app code + install production dependencies
 # ---------------------------------------------------------------------------
-FROM composer:2 AS vendor
+FROM php:8.3-cli-alpine AS vendor
+
+RUN apk add --no-cache \
+    git unzip \
+    libpng-dev \
+    libzip-dev \
+    icu-dev \
+    oniguruma-dev \
+    postgresql-dev \
+ && docker-php-ext-install \
+    gd \
+    zip \
+    intl \
+    mbstring \
+    pdo \
+    pdo_pgsql
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /app
-COPY --from=skeleton /skeleton .
 
 # Overlay this repo's custom code on top of the skeleton, overwriting the
 # skeleton's defaults where we ship our own (composer.json, config/cors.php,
