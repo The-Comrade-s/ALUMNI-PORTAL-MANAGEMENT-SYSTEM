@@ -91,7 +91,7 @@ RUN apk add --no-cache \
         pdo \
         pdo_pgsql \
         opcache \
-    && apk add --no-cache libpng freetype libjpeg-turbo libzib icu-libs oniguruma libpq \
+    && apk add --no-cache libpng freetype libjpeg-turbo libzip icu-libs oniguruma libpq \
     && apk del \
         postgresql-dev \
         libzip-dev \
