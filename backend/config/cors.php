@@ -13,10 +13,10 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
-        env('https://alumni-portal-management-system-o26e2n9l8.vercel.app/'),
+    'https://alumni-portal-management-system-o26e2n9l8.vercel.app', // Direct string, no env(), no trailing slash
+        env('FRONTEND_URL'),
         env('APP_ENV') === 'local' ? 'http://localhost:3000' : null,
-    ]),
-
+]),
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
