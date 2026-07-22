@@ -52,6 +52,7 @@ COPY composer.json composer.json
 COPY app/ app/
 COPY routes/ routes/
 COPY database/ database/
+RUN rm -f database/migrations/0001_01_01_000000_create_users_table.php
 COPY config/cors.php config/cors.php
 COPY bootstrap/app.php bootstrap/app.php
 COPY resources/views/ resources/views/
