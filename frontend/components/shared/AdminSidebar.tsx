@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, School, Building2, GraduationCap, CalendarRange,
-  UserCheck, FileBarChart, ScrollText, X,
+  UserCheck, FileBarChart, ScrollText, X, Briefcase, CalendarDays, Newspaper,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { LogoutButton } from './LogoutButton';
@@ -12,6 +12,13 @@ import { LogoutButton } from './LogoutButton';
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/alumni', label: 'Approve Alumni', icon: UserCheck },
+  // These management forms live on the member-facing pages (same ones
+  // alumni browse) rather than under /admin — the "post/manage" controls
+  // there are already gated to admin/super-admin roles, so we just link
+  // straight to them instead of duplicating the pages under /admin.
+  { href: '/dashboard/jobs', label: 'Jobs & Internships', icon: Briefcase },
+  { href: '/dashboard/events', label: 'Events', icon: CalendarDays },
+  { href: '/dashboard/news', label: 'News & Announcements', icon: Newspaper },
   { href: '/admin/schools', label: 'Schools', icon: School },
   { href: '/admin/departments', label: 'Departments', icon: Building2 },
   { href: '/admin/programmes', label: 'Programmes', icon: GraduationCap },
