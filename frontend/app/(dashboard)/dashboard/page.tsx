@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { User, Briefcase, CalendarDays, Handshake, MessageSquare, Newspaper, MapPin } from 'lucide-react';
+import { useCurrentUser } from '@/lib/user-context';
 
 const quickActions = [
   { href: '/dashboard/profile', label: 'My Profile', desc: 'View and update your profile', icon: User, tint: 'bg-navy-100 text-navy-800' },
@@ -24,10 +27,13 @@ const quickStats = [
 ];
 
 export default function DashboardHomePage() {
+  const user = useCurrentUser();
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-ink">Welcome back, John 👋</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink">Welcome back, {firstName} 👋</h1>
         <p className="mt-1 text-sm text-slate-500">Here&apos;s what&apos;s happening across your class and the wider network.</p>
       </div>
 
