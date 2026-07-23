@@ -140,7 +140,7 @@ export default function ProfilePage() {
     );
   }
 
-  const initials = profile.name.split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2);
+  const initials = (profile.name ?? '').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2);
 
   return (
     <div className="max-w-2xl space-y-6">
