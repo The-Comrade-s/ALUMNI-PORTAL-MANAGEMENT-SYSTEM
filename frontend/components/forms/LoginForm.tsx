@@ -18,7 +18,7 @@ export function LoginForm() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const res = await apiFetch<{ token: string }>('/auth/login', {
+      const res = await apiFetch<{ token: string; user: { role: { slug: string } } }>('/auth/login', {
         method: 'POST',
         auth: false,
         body: JSON.stringify({
@@ -28,7 +28,8 @@ export function LoginForm() {
         }),
       });
       setToken(res.token);
-      router.push('/dashboard');
+      const isAdmin = ['administrator', 'super_administrator'].includes(res.user.role.slug);
+      router.push(isAdmin ? '/admin' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
