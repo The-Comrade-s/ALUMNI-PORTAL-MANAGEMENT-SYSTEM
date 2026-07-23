@@ -112,8 +112,18 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user()->load('role', 'alumniProfile.programme.department.school', 'alumniProfile.graduationYear');
+
         return response()->json([
-            'user' => $request->user()->load('role', 'alumniProfile'),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'alumni_profile' => $user->alumniProfile
+                    ? new \App\Http\Resources\AlumniProfileResource($user->alumniProfile)
+                    : null,
+            ],
         ]);
     }
 
