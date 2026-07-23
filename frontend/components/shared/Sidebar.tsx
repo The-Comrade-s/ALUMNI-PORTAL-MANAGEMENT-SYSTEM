@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, User, Users2, Briefcase, CalendarDays, Handshake,
-  MessageSquare, Newspaper, Gift, Settings, X,
+  MessageSquare, Newspaper, Gift, Settings, X, ShieldCheck,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { LogoutButton } from './LogoutButton';
+import { useCurrentUser } from '@/lib/user-context';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,6 +24,8 @@ const navItems = [
 
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
+  const user = useCurrentUser();
+  const isAdmin = !!user && ['administrator', 'super_administrator'].includes(user.role.slug);
 
   const content = (
     <>
@@ -50,6 +53,11 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
       </nav>
 
       <div className="space-y-1 border-t border-line-200 px-3 py-4">
+        {isAdmin && (
+          <Link href="/admin" onClick={onClose} className="flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-mist-100 hover:text-ink">
+            <ShieldCheck className="h-4 w-4" /> Admin Panel
+          </Link>
+        )}
         <Link href="/dashboard/settings" onClick={onClose} className="flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-mist-100 hover:text-ink">
           <Settings className="h-4 w-4" /> Settings
         </Link>
