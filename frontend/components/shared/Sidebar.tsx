@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, User, Users2, Briefcase, CalendarDays, Handshake,
-  MessageSquare, Newspaper, Gift, Settings,
+  MessageSquare, Newspaper, Gift, Settings, X,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { LogoutButton } from './LogoutButton';
@@ -21,11 +21,11 @@ const navItems = [
   { href: '/dashboard/donations', label: 'Donations', icon: Gift },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
 
-  return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-line-200 bg-white md:flex">
+  const content = (
+    <>
       <div className="border-b border-line-200 px-5 py-4">
         <Logo />
       </div>
@@ -37,6 +37,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onClose}
               className={`flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium transition-colors ${
                 active ? 'bg-navy-800 text-white' : 'text-slate-500 hover:bg-mist-100 hover:text-ink'
               }`}
@@ -49,11 +50,37 @@ export function Sidebar() {
       </nav>
 
       <div className="space-y-1 border-t border-line-200 px-3 py-4">
-        <Link href="/dashboard/settings" className="flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-mist-100 hover:text-ink">
+        <Link href="/dashboard/settings" onClick={onClose} className="flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-mist-100 hover:text-ink">
           <Settings className="h-4 w-4" /> Settings
         </Link>
         <LogoutButton className="flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-mist-100 hover:text-danger" />
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop: static sidebar */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-line-200 bg-white md:flex">
+        {content}
+      </aside>
+
+      {/* Mobile: slide-in drawer, only mounted while open */}
+      {open && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
+            <button
+              onClick={onClose}
+              className="absolute right-3 top-3 rounded-card p-1.5 text-slate-500 hover:bg-mist-100"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {content}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

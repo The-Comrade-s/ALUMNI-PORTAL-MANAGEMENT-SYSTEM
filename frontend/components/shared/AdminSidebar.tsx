@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, School, Building2, GraduationCap, CalendarRange,
-  UserCheck, FileBarChart, ScrollText,
+  UserCheck, FileBarChart, ScrollText, X,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { LogoutButton } from './LogoutButton';
@@ -20,11 +20,11 @@ const navItems = [
   { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
 
-  return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-line-200 bg-navy-900 md:flex">
+  const content = (
+    <>
       <div className="border-b border-white/10 px-5 py-4">
         <Logo theme="dark" />
       </div>
@@ -36,6 +36,7 @@ export function AdminSidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onClose}
               className={`flex items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium transition-colors ${
                 active ? 'bg-gold-500 text-navy-900' : 'text-slate-300 hover:bg-white/5 hover:text-white'
               }`}
@@ -50,6 +51,32 @@ export function AdminSidebar() {
       <div className="border-t border-white/10 px-3 py-4">
         <LogoutButton className="flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white" />
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop: static sidebar */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-line-200 bg-navy-900 md:flex">
+        {content}
+      </aside>
+
+      {/* Mobile: slide-in drawer, only mounted while open */}
+      {open && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-navy-900 shadow-xl">
+            <button
+              onClick={onClose}
+              className="absolute right-3 top-3 rounded-card p-1.5 text-slate-300 hover:bg-white/10"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {content}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
