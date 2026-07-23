@@ -127,6 +127,25 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Self-service password change for a logged-in user (Settings page).
+     * Distinct from forgotPassword/resetPassword, which are for the
+     * signed-out "forgot my password" email flow.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|current_password:sanctum',
+            'password' => 'required|confirmed|min:8',
+        ]);
+
+        $request->user()->forceFill([
+            'password' => Hash::make($request->input('password')),
+        ])->save();
+
+        return response()->json(['message' => 'Password updated successfully.']);
+    }
+
     public function forgotPassword(Request $request): JsonResponse
     {
         $request->validate(['email' => 'required|email']);
